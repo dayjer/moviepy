@@ -1,8 +1,8 @@
 import numpy as np
 
-try:               # Python 2
-   reduce
-except NameError:  # Python 3
+from moviepy.compat import PY3
+
+if PY3:
    from functools import reduce
 
 from moviepy.tools import deprecated_version_of

@@ -8,13 +8,14 @@ import os
 import subprocess as sp
 import tempfile
 import warnings
+from functools import partial
 
 import numpy as np
 from imageio import imread, imsave
 from tqdm import tqdm
 
 from ..Clip import Clip
-from ..compat import DEVNULL, string_types
+from ..compat import DEVNULL, PY3
 from ..config import get_setting
 from ..decorators import (add_mask_if_none, apply_to_mask,
                           convert_masks_to_RGB, convert_to_seconds, outplace,
@@ -262,11 +263,11 @@ class VideoClip(Clip):
                 codec = extensions_dict[ext]['codec'][0]
             except KeyError:
                 raise ValueError("MoviePy couldn't find the codec associated "
-                                 "with the filename. Provide the 'codec' "
-                                 "parameter in write_videofile.")
+                                 "with the filename. Provide the 'codec' parameter in "
+                                 "write_videofile.")
 
         if audio_codec is None:
-            if ext in ['ogv', 'webm']:
+            if (ext in ['ogv', 'webm']):
                 audio_codec = 'libvorbis'
             else:
                 audio_codec = 'libmp3lame'
@@ -297,9 +298,8 @@ class VideoClip(Clip):
 
                         raise ValueError(
                             "The audio_codec you chose is unknown by MoviePy. "
-                            "You should report this. In the meantime, you can "
-                            "specify a temp_audiofile with the right extension "
-                            "in write_videofile.")
+                            "You should report this. In the meantime, you can specify a "
+                            "temp_audiofile with the right extension in write_videofile.")
 
                 audiofile = (name + Clip._TEMP_FILES_PREFIX +
                              "wvf_snd.%s" % audio_ext)
@@ -320,7 +320,7 @@ class VideoClip(Clip):
                            bitrate=bitrate,
                            preset=preset,
                            write_logfile=write_logfile,
-                           audiofile=audiofile,
+                           audiofile = audiofile,
                            verbose=verbose, threads=threads,
                            ffmpeg_params=ffmpeg_params,
                            progress_bar=progress_bar)
@@ -355,7 +355,7 @@ class VideoClip(Clip):
           will save the clip's mask (if any) as an alpha canal (PNGs only).
 
         verbose
-          Boolean indicating whether to print information.
+          Boolean indicating whether to print infomation.
 
         progress_bar
           Boolean indicating whether to show the progress bar.
@@ -425,11 +425,6 @@ class VideoClip(Clip):
           the colors that are less than fuzz% different are in fact
           the same.
 
-        tempfiles
-          Writes every frame to a file instead of passing them in the RAM.
-          Useful on computers with little RAM. Can only be used with
-          ImageMagick' or 'ffmpeg'.
-
 
         Notes
         -----
@@ -449,17 +444,17 @@ class VideoClip(Clip):
             write_gif_with_image_io(self, filename, fps=fps, opt=opt, loop=loop,
                                     verbose=verbose, colors=colors)
         elif tempfiles:
-            # convert imageio opt variable to something that can be used with
-            # ImageMagick
-            opt1 = opt
+            #convert imageio opt variable to something that can be used with
+            #ImageMagick
+            opt1=opt
             if opt1 == 'nq':
-                opt1 ='optimizeplus'
+               opt1='optimizeplus'
             else:
-                opt1 ='OptimizeTransparency'
+               opt1='OptimizeTransparency'
             write_gif_with_tempfiles(self, filename, fps=fps,
                                      program=program, opt=opt1, fuzz=fuzz,
-                                     verbose=verbose, loop=loop,
-                                     dispose=dispose, colors=colors)
+                                     verbose=verbose,
+                                     loop=loop, dispose=dispose, colors=colors)
         else:
             write_gif(self, filename, fps=fps, program=program,
                       opt=opt, fuzz=fuzz, verbose=verbose, loop=loop,
@@ -642,7 +637,7 @@ class VideoClip(Clip):
                                         bg_color=color)
 
         if (isinstance(self, ImageClip) and (not hasattr(pos, "__call__"))
-                and ((self.mask is None) or isinstance(self.mask, ImageClip))):
+            and ((self.mask is None) or isinstance(self.mask, ImageClip))):
             new_result = result.to_ImageClip()
             if result.mask is not None:
                 new_result.mask = result.mask.to_ImageClip()
@@ -688,6 +683,7 @@ class VideoClip(Clip):
         """
         self.mask = self.mask.fl_image(lambda pic: op * pic)
 
+
     @apply_to_mask
     @outplace
     def set_position(self, pos, relative=False):
@@ -720,21 +716,21 @@ class VideoClip(Clip):
         else:
             self.pos = lambda t: pos
 
-    # --------------------------------------------------------------
+    #--------------------------------------------------------------
     # CONVERSIONS TO OTHER TYPES
 
     @convert_to_seconds(['t'])
-    def to_ImageClip(self, t=0, with_mask=True, duration=None):
+    def to_ImageClip(self, t=0, with_mask=True):
         """
         Returns an ImageClip made out of the clip's frame at time ``t``,
         which can be expressed in seconds (15.35), in (min, sec),
         in (hour, min, sec), or as a string: '01:03:05.35'.
         """
-        newclip = ImageClip(self.get_frame(t), ismask=self.ismask,
-                            duration=duration)
+        newclip = ImageClip(self.get_frame(t), ismask=self.ismask)
         if with_mask and self.mask is not None:
             newclip.mask = self.mask.to_ImageClip(t)
         return newclip
+
 
     def to_mask(self, canal=0):
         """Return a mask a video clip made from the clip."""
@@ -756,7 +752,7 @@ class VideoClip(Clip):
         else:
             return self
 
-    # ----------------------------------------------------------------
+    #----------------------------------------------------------------
     # Audio
 
     @outplace
@@ -802,11 +798,10 @@ class DataVideoClip(VideoClip):
                  has_constant_size=True):
         self.data = data
         self.data_to_frame = data_to_frame
-        self.fps = fps
-        make_frame = lambda t: self.data_to_frame(self.data[int(self.fps*t)])
+        self.fps=fps
+        make_frame = lambda t: self.data_to_frame( self.data[int(self.fps*t)])
         VideoClip.__init__(self, make_frame, ismask=ismask,
-                           duration=1.0*len(data)/fps,
-                           has_constant_size=has_constant_size)
+               duration=1.0*len(data)/fps, has_constant_size=has_constant_size)
 
 
 class UpdatedVideoClip(VideoClip):
@@ -844,14 +839,12 @@ class UpdatedVideoClip(VideoClip):
 
     def __init__(self, world, ismask=False, duration=None):
         self.world = world
-
         def make_frame(t):
             while self.world.clip_t < t:
                 world.update()
             return world.to_frame()
-
-        VideoClip.__init__(self, make_frame=make_frame,
-                           ismask=ismask, duration=duration)
+        VideoClip.__init__(self, make_frame= make_frame,
+                               ismask=ismask, duration=duration)
 
 
 """---------------------------------------------------------------------
@@ -890,6 +883,10 @@ class ImageClip(VideoClip):
       Set this parameter to `True` (default) if you want the alpha layer
       of the picture (if it exists) to be used as a mask.
 
+    imageio_params
+      Any additional imageio parameters to pass when reading files, as a dict.
+      ex: {'exifrotate': False}
+
     Attributes
     -----------
 
@@ -899,11 +896,18 @@ class ImageClip(VideoClip):
     """
 
     def __init__(self, img, ismask=False, transparent=True,
-                 fromalpha=False, duration=None):
+                 fromalpha=False, duration=None, imageio_params=None):
         VideoClip.__init__(self, ismask=ismask, duration=duration)
 
-        if isinstance(img, string_types):
-            img = imread(img)
+        imageio_params = imageio_params or {}
+        _imread = partial(imread, **imageio_params)
+
+        if PY3:
+           if isinstance(img, str):
+              img = _imread(img)
+        else:
+           if isinstance(img, (str, unicode)):
+              img = _imread(img)
 
         if len(img.shape) == 3:  # img is (now) a RGB(a) numpy array
 
@@ -989,12 +993,12 @@ class ImageClip(VideoClip):
 # replaced by the more explicite write_videofile, write_gif, etc.
 
 VideoClip.set_pos = deprecated_version_of(VideoClip.set_position,
-                                          'set_pos')
+                                                'set_pos')
 VideoClip.to_videofile = deprecated_version_of(VideoClip.write_videofile,
                                                'to_videofile')
 VideoClip.to_gif = deprecated_version_of(VideoClip.write_gif, 'to_gif')
 VideoClip.to_images_sequence = deprecated_version_of(VideoClip.write_images_sequence,
-                                                     'to_images_sequence')
+                                               'to_images_sequence')
 
 
 class ColorClip(ImageClip):
@@ -1123,10 +1127,10 @@ class TextClip(ImageClip):
             size = ('' if size[0] is None else str(size[0]),
                     '' if size[1] is None else str(size[1]))
 
-        cmd = ([get_setting("IMAGEMAGICK_BINARY"),
+        cmd = ( [get_setting("IMAGEMAGICK_BINARY"),
                "-background", bg_color,
-                "-fill", color,
-                "-font", font])
+               "-fill", color,
+               "-font", font])
 
         if fontsize is not None:
             cmd += ["-pointsize", "%d" % fontsize]
@@ -1150,18 +1154,18 @@ class TextClip(ImageClip):
                 "-type", "truecolormatte", "PNG32:%s" % tempfilename]
 
         if print_cmd:
-            print(" ".join(cmd))
+            print( " ".join(cmd) )
 
         try:
-            subprocess_call(cmd, verbose=False)
-        except (IOError, OSError) as err:
-            error = ("MoviePy Error: creation of %s failed because of the "
-                     "following error:\n\n%s.\n\n." % (filename, str(err))
-                     + ("This error can be due to the fact that ImageMagick "
-                        "is not installed on your computer, or (for Windows "
-                        "users) that you didn't specify the path to the "
-                        "ImageMagick binary in file conf.py, or that the path "
-                        "you specified is incorrect"))
+            subprocess_call(cmd, verbose=False )
+        except (IOError,OSError) as err:
+            error = ("MoviePy Error: creation of %s failed because "
+              "of the following error:\n\n%s.\n\n."%(filename, str(err))
+               + ("This error can be due to the fact that "
+                    "ImageMagick is not installed on your computer, or "
+                    "(for Windows users) that you didn't specify the "
+                    "path to the ImageMagick binary in file conf.py, or."
+                    "that the path you specified is incorrect" ))
             raise IOError(error)
 
         ImageClip.__init__(self, tempfilename, transparent=transparent)

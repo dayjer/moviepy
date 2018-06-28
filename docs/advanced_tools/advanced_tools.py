@@ -1,4 +1,3 @@
-"""
 Advanced tools
 ===============
 
@@ -8,5 +7,4 @@ that can help you edit videos. See the documentation for each modu
 Subtitles
 ----------
 
-Credits
-"""
+Credits 
