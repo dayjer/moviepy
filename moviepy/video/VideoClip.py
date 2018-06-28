@@ -1168,7 +1168,8 @@ class TextClip(ImageClip):
                     "that the path you specified is incorrect" ))
             raise IOError(error)
 
-        ImageClip.__init__(self, tempfilename, transparent=transparent)
+        ImageClip.__init__(self, tempfilename, transparent=transparent, imageio_params={'ignoregamma': True})
+        #ImageClip.__init__(self, tempfilename, transparent=transparent)
         self.txt = txt
         self.color = color
         self.stroke_color = stroke_color
